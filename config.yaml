@@ -1,0 +1,5 @@
+dataset:
+    test_mp4: data/test.mp4
+    train_mp4: data/train.mp4
+    train_txt: data/train.txt
+
