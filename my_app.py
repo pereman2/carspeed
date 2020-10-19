@@ -16,13 +16,13 @@ def my_app(cfg : DictConfig) -> None:
     train_labels = get_txt_data(to_absolute_path(cfg.dataset.train_txt))[:batch_size]
     train(train_data, train_labels, batch_size)
 
-def train(x, labels, batch_size):
-    input_size = 640*480 # shape of gray
-    output_size = 100
+def train(x, labels, batch_size=400):
+    output_size = 1
     n_epochs = 100
     sequence = 20 # 20 frames per second
+    input_size = 640*480
     lr = 0.01
-    input_seq = get_input_seq(x, batch_size, sequence)
+    input_seq = torch.Tensor(get_input_seq(x, batch_size, sequence))
     target_seq = torch.Tensor(labels)
     model = Model(input_size=input_size, output_size=output_size, hidden_dim=12, n_layers=1)
     criterion = torch.nn.CrossEntropyLoss()
@@ -31,11 +31,11 @@ def train(x, labels, batch_size):
     # train run
     for epoch in range(1, n_epochs + 1):
         optimizer.zero_grad()
-        print(input_seq)
+        # 800 outputs, 400 batch size * sequence
         output, hidden = model(input_seq)
      
 def get_input_seq(x, batch_size, seq_len):
-    input_seq = np.zeros((batch_size, seq_len, len(x)), dtype=np.float32)
+    input_seq = np.zeros((batch_size, seq_len, 640*480), dtype=np.float32)
 
     for i in range(batch_size):
         for u in range(seq_len):
