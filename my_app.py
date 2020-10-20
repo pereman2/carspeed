@@ -3,6 +3,7 @@ from hydra.utils import to_absolute_path
 from omegaconf import DictConfig, OmegaConf
 from typing import List, Any
 from rnn import Model
+from sklearn.metrics import accuracy_score
 import torch
 import numpy as np
 import cv2
@@ -12,34 +13,46 @@ LIMIT_FRAMES = 1000
 @hydra.main(config_name="config")
 def my_app(cfg : DictConfig) -> None:
     batch_size = 400
-    train_data = get_mp4_data(to_absolute_path(cfg.dataset.train_mp4))[:batch_size]
-    train_labels = get_txt_data(to_absolute_path(cfg.dataset.train_txt))[:batch_size]
+    train_data = get_mp4_data(to_absolute_path(cfg.dataset.train_mp4))
+    train_labels = get_txt_data(to_absolute_path(cfg.dataset.train_txt))
+    train_data = train_data[:batch_size]
+    train_labels = train_labels[:batch_size]
     train(train_data, train_labels, batch_size)
 
 def train(x, labels, batch_size=400):
     output_size = 1
-    n_epochs = 100
-    sequence = 20 # 20 frames per second
+    n_epochs = 1000
+    sequence = 1 # 20 frames per second
     input_size = 640*480
     lr = 0.01
+    batch_size = 400
+    x = x.reshape((batch_size, input_size))
     input_seq = torch.Tensor(get_input_seq(x, batch_size, sequence))
     target_seq = torch.Tensor(labels)
-    model = Model(input_size=input_size, output_size=output_size, hidden_dim=12, n_layers=1)
-    criterion = torch.nn.CrossEntropyLoss()
+    model = Model(input_size=input_size, output_size=output_size, hidden_dim=20, n_layers=1)
+    criterion = torch.nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
     # train run
     for epoch in range(1, n_epochs + 1):
         optimizer.zero_grad()
-        # 800 outputs, 400 batch size * sequence
+        # 8000 outputs, 400 batch size * sequence
         output, hidden = model(input_seq)
+        output = output.reshape((400))
+        loss = criterion(output, target_seq.view(-1).float())
+        loss.backward()
+        optimizer.step()
+        accuracy = (output == target_seq).sum()
+        if epoch % 10 == 0:
+            print('Epoch: {}/{}.............'.format(epoch, n_epochs), end=' ')
+            print("Loss: {:.4f}".format(loss.item()))
      
 def get_input_seq(x, batch_size, seq_len):
-    input_seq = np.zeros((batch_size, seq_len, 640*480), dtype=np.float32)
+    input_seq = np.zeros((seq_len, batch_size, 640*480), dtype=np.float32)
 
-    for i in range(batch_size):
-        for u in range(seq_len):
-            input_seq[i, u, x[i, u]] = 1
+    for u in range(seq_len):
+        for i in range(batch_size):
+            input_seq[u, i] = x[u, i]
     return input_seq
 
     
