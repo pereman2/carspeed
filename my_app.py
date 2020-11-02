@@ -29,7 +29,7 @@ def train(x, labels, batch_size=400):
     x = x.reshape((batch_size, input_size))
     input_seq = torch.Tensor(get_input_seq(x, batch_size, sequence))
     target_seq = torch.Tensor(labels)
-    model = Model(input_size=input_size, output_size=output_size, hidden_dim=20, n_layers=1)
+    model = Model(input_size=input_size, output_size=output_size, hidden_dim=50, n_layers=1)
     criterion = torch.nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
